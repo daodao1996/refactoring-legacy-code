@@ -20,4 +20,8 @@ public class WalletServiceImpl implements WalletService {
             return null;
         }
     }
+
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 }
