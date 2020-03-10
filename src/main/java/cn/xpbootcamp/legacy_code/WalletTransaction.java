@@ -44,16 +44,14 @@ public class WalletTransaction {
         if (status == STATUS.EXECUTED) {
             return true;
         }
-        boolean isLocked = false;
+        boolean isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
         try {
-            isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
-
             if (!isLocked) {
                 return false;
             }
 
             if (dealOver20Days()) {
-                this.status = STATUS.EXPIRED;
+                setStatus(STATUS.EXPIRED);
                 return false;
             }
             return moveMoney();
@@ -73,16 +71,18 @@ public class WalletTransaction {
     }
 
     private boolean moveMoney() {
-        WalletService walletService = new WalletServiceImpl();
-        String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+        String walletTransactionId = new WalletServiceImpl().moveMoney(id, buyerId, sellerId, amount);
         if (walletTransactionId != null) {
             this.walletTransactionId = walletTransactionId;
-            this.status = STATUS.EXECUTED;
+            setStatus(STATUS.EXECUTED);
             return true;
         } else {
-            this.status = STATUS.FAILED;
+            setStatus(STATUS.FAILED);
             return false;
         }
     }
 
+    public void setStatus(STATUS status) {
+        this.status = status;
+    }
 }
