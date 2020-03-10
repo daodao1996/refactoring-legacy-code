@@ -85,4 +85,8 @@ public class WalletTransaction {
     public void setStatus(STATUS status) {
         this.status = status;
     }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
 }
