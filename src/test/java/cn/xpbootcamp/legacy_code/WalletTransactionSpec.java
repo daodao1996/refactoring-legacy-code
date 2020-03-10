@@ -19,14 +19,16 @@ public class WalletTransactionSpec {
   private RedisDistributedLock distributedLock = mock(RedisDistributedLock.class);
 
   @Test
-  void should_execute_throw_exception_when_buyerId_null(){
+  void should_execute_throw_exception_when_buyerId_null() {
     WalletTransaction walletTransaction = new WalletTransaction("t_11", null, 1L, 1L, "aa");
+
     assertThrows(InvalidTransactionException.class, walletTransaction::execute);
   }
 
   @Test
   void should_execute_throw_exception_when_sellerId_null() {
     WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, null, 1L, "aa");
+
     assertThrows(InvalidTransactionException.class, walletTransaction::execute);
   }
 
@@ -35,13 +37,15 @@ public class WalletTransactionSpec {
     WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, 1L, 1L, "aa");
     walletTransaction.setStatus(STATUS.EXECUTED);
     walletTransaction.setAmount(1D);
+
     assertTrue(walletTransaction.execute());
   }
 
   @Test
-  void should_execute_throw_exception_when_amount_less_than_0(){
+  void should_execute_throw_exception_when_amount_less_than_0() {
     WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, 1L, 1L, "aa");
     walletTransaction.setAmount(-1D);
+
     assertThrows(InvalidTransactionException.class, walletTransaction::execute);
   }
 
@@ -49,10 +53,12 @@ public class WalletTransactionSpec {
   void should_execute_return_false_when_moveMoney_return_null() throws InvalidTransactionException {
     when(service.moveMoney("t_11", 1L, 2L, 10D)).thenReturn(null);
     when(distributedLock.lock("t_11")).thenReturn(true);
+
     WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, 2L, 1L, "aa");
     walletTransaction.setAmount(10D);
     walletTransaction.setInstance(distributedLock);
     walletTransaction.setWalletService(service);
+
     assertFalse(walletTransaction.execute());
     assertEquals(STATUS.FAILED, walletTransaction.getStatus());
   }
@@ -61,10 +67,12 @@ public class WalletTransactionSpec {
   void should_execute_return_true_when_moveMoney_successful() throws InvalidTransactionException {
     when(service.moveMoney("t_11", 1L, 2L, 10D)).thenReturn("aaa");
     when(distributedLock.lock("t_11")).thenReturn(true);
+
     WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, 2L, 1L, "aa");
     walletTransaction.setAmount(10D);
     walletTransaction.setInstance(distributedLock);
     walletTransaction.setWalletService(service);
+
     assertTrue(walletTransaction.execute());
     assertEquals(STATUS.EXECUTED, walletTransaction.getStatus());
   }

@@ -8,7 +8,7 @@ import cn.xpbootcamp.legacy_code.utils.RedisDistributedLock;
 import javax.transaction.InvalidTransactionException;
 
 public class WalletTransaction {
-    private String id;
+    private String transactionId;
     private Long buyerId;
     private Long sellerId;
     private Long productId;
@@ -21,14 +21,14 @@ public class WalletTransaction {
     private WalletServiceImpl walletService = new WalletServiceImpl();
 
 
-    public WalletTransaction(String preAssignedId, Long buyerId, Long sellerId, Long productId, String orderId) {
-        if (preAssignedId != null && !preAssignedId.isEmpty()) {
-            this.id = preAssignedId;
+    public WalletTransaction(String transactionId, Long buyerId, Long sellerId, Long productId, String orderId) {
+        if (transactionId != null && !transactionId.isEmpty()) {
+            this.transactionId = transactionId;
         } else {
-            this.id = IdGenerator.generateTransactionId();
+            this.transactionId = IdGenerator.generateTransactionId();
         }
-        if (!this.id.startsWith("t_")) {
-            this.id = "t_" + preAssignedId;
+        if (!this.transactionId.startsWith("t_")) {
+            this.transactionId = "t_" + transactionId;
         }
         this.buyerId = buyerId;
         this.sellerId = sellerId;
@@ -45,7 +45,7 @@ public class WalletTransaction {
         if (status == STATUS.EXECUTED) {
             return true;
         }
-        boolean isLocked = instance.lock(id);
+        boolean isLocked = instance.lock(transactionId);
         try {
             if (!isLocked) {
                 return false;
@@ -58,7 +58,7 @@ public class WalletTransaction {
             return moveMoney();
         } finally {
             if (isLocked) {
-                instance.unlock(id);
+                instance.unlock(transactionId);
             }
         }
     }
@@ -72,7 +72,7 @@ public class WalletTransaction {
     }
 
     private boolean moveMoney() {
-        String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+        String walletTransactionId = walletService.moveMoney(transactionId, buyerId, sellerId, amount);
         if (walletTransactionId != null) {
             this.walletTransactionId = walletTransactionId;
             setStatus(STATUS.EXECUTED);
