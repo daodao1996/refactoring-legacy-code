@@ -18,6 +18,8 @@ public class WalletTransaction {
     private Double amount;
     private STATUS status;
     private String walletTransactionId;
+    private RedisDistributedLock instance = RedisDistributedLock.getSingletonInstance();
+    private WalletServiceImpl walletService = new WalletServiceImpl();
 
 
     public WalletTransaction(String preAssignedId, Long buyerId, Long sellerId, Long productId, String orderId) {
@@ -44,7 +46,7 @@ public class WalletTransaction {
         if (status == STATUS.EXECUTED) {
             return true;
         }
-        boolean isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
+        boolean isLocked = instance.lock(id);
         try {
             if (!isLocked) {
                 return false;
@@ -57,7 +59,7 @@ public class WalletTransaction {
             return moveMoney();
         } finally {
             if (isLocked) {
-                RedisDistributedLock.getSingletonInstance().unlock(id);
+                instance.unlock(id);
             }
         }
     }
@@ -71,7 +73,7 @@ public class WalletTransaction {
     }
 
     private boolean moveMoney() {
-        String walletTransactionId = new WalletServiceImpl().moveMoney(id, buyerId, sellerId, amount);
+        String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
         if (walletTransactionId != null) {
             this.walletTransactionId = walletTransactionId;
             setStatus(STATUS.EXECUTED);
@@ -86,7 +88,19 @@ public class WalletTransaction {
         this.status = status;
     }
 
+    public STATUS getStatus() {
+        return status;
+    }
+
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+
+    public void setInstance(RedisDistributedLock instance) {
+        this.instance = instance;
+    }
+
+    public void setWalletService(WalletServiceImpl walletService) {
+        this.walletService = walletService;
     }
 }
