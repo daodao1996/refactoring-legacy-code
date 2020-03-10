@@ -38,7 +38,7 @@ public class WalletTransaction {
     }
 
     public boolean execute() throws InvalidTransactionException {
-        if (buyerId == null || (sellerId == null || amount < 0.0)) {
+        if (buyerId == null || sellerId == null || amount < 0.0) {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
         if (status == STATUS.EXECUTED) return true;
@@ -51,26 +51,33 @@ public class WalletTransaction {
                 return false;
             }
             if (status == STATUS.EXECUTED) return true; // double check
-            long executionInvokedTimestamp = System.currentTimeMillis();
-            // 交易超过20天
-            if (executionInvokedTimestamp - createdTimestamp > 1728000000) {
+
+            if (dealOver20Days()) {
                 this.status = STATUS.EXPIRED;
                 return false;
             }
-            WalletService walletService = new WalletServiceImpl();
-            String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
-            if (walletTransactionId != null) {
-                this.walletTransactionId = walletTransactionId;
-                this.status = STATUS.EXECUTED;
-                return true;
-            } else {
-                this.status = STATUS.FAILED;
-                return false;
-            }
+            return moveMoney();
         } finally {
             if (isLocked) {
                 RedisDistributedLock.getSingletonInstance().unlock(id);
             }
+        }
+    }
+
+    private boolean dealOver20Days() {
+        return System.currentTimeMillis() - createdTimestamp > 1728000000;
+    }
+
+    private boolean moveMoney() {
+        WalletService walletService = new WalletServiceImpl();
+        String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+        if (walletTransactionId != null) {
+            this.walletTransactionId = walletTransactionId;
+            this.status = STATUS.EXECUTED;
+            return true;
+        } else {
+            this.status = STATUS.FAILED;
+            return false;
         }
     }
 
