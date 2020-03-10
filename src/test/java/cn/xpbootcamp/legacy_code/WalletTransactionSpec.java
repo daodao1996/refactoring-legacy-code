@@ -1,7 +1,6 @@
 package cn.xpbootcamp.legacy_code;
 
 import cn.xpbootcamp.legacy_code.enums.STATUS;
-import cn.xpbootcamp.legacy_code.service.WalletService;
 import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
 import cn.xpbootcamp.legacy_code.utils.RedisDistributedLock;
 import org.junit.jupiter.api.Test;
@@ -58,4 +57,15 @@ public class WalletTransactionSpec {
     assertEquals(STATUS.FAILED, walletTransaction.getStatus());
   }
 
+  @Test
+  void should_execute_return_true_when_moveMoney_successful() throws InvalidTransactionException {
+    when(service.moveMoney("t_11", 1L, 2L, 10D)).thenReturn("aaa");
+    when(distributedLock.lock("t_11")).thenReturn(true);
+    WalletTransaction walletTransaction = new WalletTransaction("t_11", 1L, 2L, 1L, "aa");
+    walletTransaction.setAmount(10D);
+    walletTransaction.setInstance(distributedLock);
+    walletTransaction.setWalletService(service);
+    assertTrue(walletTransaction.execute());
+    assertEquals(STATUS.EXECUTED, walletTransaction.getStatus());
+  }
 }
